@@ -6,22 +6,11 @@ var Engine = {
 	 * 	  value-change events. These events should be fired whenever a value (or group of values, I suppose) is updated.
 	 * 	  That would be so elegant and awesome.
 	 */
-	SITE_URL: encodeURIComponent("http://adarkroom.bl.ee"),
+	SITE_URL: encodeURIComponent(Multiplayer.webSocketHost),
 	VERSION: 1.3,
 	MAX_STORE: 99999999999999,
 	SAVE_DISPLAY: 30 * 1000,
 	GAME_OVER: false,
-	
-	ableToSave: false,
-	USERNAME: getUrlVars()['username'],
-
-	applyLoadedPlayerData: function(e) {
-		//console.log("Loaded data "+Multiplayer.recievedData)
-		localStorage.gameState = e.target.recievedData;
-		Engine.loadGame();
-		Engine.ableToSave = true;
-		console.log("Loaded from server");
-	},
 	
 	//object event types
 	topics: {},
@@ -80,7 +69,6 @@ var Engine = {
 	},
 		
 	init: function(options) {
-		//localStorage.gameState = undefined;
 		this.options = $.extend(
 			this.options,
 			options
@@ -104,11 +92,7 @@ var Engine = {
 			window.State = this.options.state;
 		} else {
 			Engine.loadGame();
-			$(Multiplayer).on('loadedPlayerData',Engine.applyLoadedPlayerData);
-			Multiplayer.recievePlayerData(this.USERNAME);
 		}
-		//localStorage.gameState = undefined;
-		//console.log(Engine.applyLoadedPlayerData);
 		
 		$('<div>').attr('id', 'locationSlider').appendTo('#main');
 		
@@ -176,9 +160,8 @@ var Engine = {
 		}
 		
 		Engine.travelTo(Room);
-
+		Multiplayer.webSocketHandShake();
 	},
-	
 	
 	browserValid: function() {
 		return location.search.indexOf('ignorebrowser=true') >= 0 || (
@@ -192,8 +175,7 @@ var Engine = {
 	},
 	
 	saveGame: function() {
-		if(typeof Storage != 'undefined' && localStorage && this.ableToSave) {
-			//console.log("Save");
+		if(typeof Storage != 'undefined' && localStorage) {
 			if(Engine._saveTimer != null) {
 				clearTimeout(Engine._saveTimer);
 			}
@@ -201,17 +183,12 @@ var Engine = {
 				$('#saveNotify').css('opacity', 1).animate({opacity: 0}, 1000, 'linear');
 				Engine._lastNotify = Date.now();
 			}
-			
 			localStorage.gameState = JSON.stringify(State);
-			//console.log(localStorage.gameState);
-			//console.log();
-			Multiplayer.sendPlayerData(this.USERNAME,localStorage.gameState);
-			//recievePlayerData(getUrlVars()['username']);
+			Multiplayer.webSocketSendState(localStorage.gameState);
 		}
 	},
 	
 	loadGame: function() {
-		//console.log("Load");
 		try {
 			var savedState = JSON.parse(localStorage.gameState);
 			if(savedState) {
@@ -220,56 +197,67 @@ var Engine = {
 				Engine.log("loaded save!");
 			}
 		} catch(e) {
-			Engine.ableToSave = true;
 			State = {};
 			$SM.set('version', Engine.VERSION);
 			Engine.event('progress', 'new game');
 		}
-		
-		//console.log(typeof(localStorage.gameState));
-		//console.log(typeof(savedState));
 	},
 	
   exportImport: function() {
     Events.startEvent({
-			title: 'Export / Import',
-			scenes: {
-				start: {
-					text: ['export or import save data, for backing up',
-					       'or migrating computers'],
-					buttons: {
-						'export': {
-							text: 'export',
-							onChoose: Engine.export64
-						},
-						'import': {
-							text: 'import',
-							nextScene: {1: 'confirm'},
-						},
-						'cancel': {
-							text: 'cancel',
-							nextScene: 'end'
-						}
+		title: 'Export / Import',
+		scenes: {
+			start: {
+				text: ['export or import save data, for backing up',
+				       'or migrating computers'],
+				buttons: {
+					'export': {
+						text: 'export',
+						onChoose: Engine.export64
+					},
+					'import': {
+						text: 'import',
+						nextScene: {1: 'confirm'},
+					},
+					'cancel': {
+						text: 'cancel',
+						nextScene: 'end'
 					}
-				},
-				'confirm': {
-					text: ['are you sure?',
-					       'if the code is invalid, all data will be lost.',
-					       'this is irreversible.'],
-					buttons: {
-						'yes': {
-							text: 'yes',
-							nextScene: 'end',
-							onChoose: Engine.import64
-						},
-						'no': {
-							text: 'no',
-							nextScene: 'end'
-						}
+				}
+			},
+			'confirm': {
+				text: ['are you sure?',
+				       'if the code is invalid, all data will be lost.',
+				       'this is irreversible.'],
+				buttons: {
+					'yes': {
+						text: 'yes',
+						nextScene: {1: 'inputImport'},
+						onChoose: Engine.enableSelection
+					},
+					'no': {
+						text: 'no',
+						nextScene: 'end'
+					}
+				}
+			},
+			'inputImport': {
+				text: ['put the save code here.'],
+				textarea: '',
+				buttons: {
+					'okay': {
+						text: 'okay',
+						nextScene: 'end',
+						onChoose: Engine.import64
+					},
+					'cancel': {
+						text: 'cancel',
+						nextScene: 'end'
 					}
 				}
 			}
-		});
+		}
+	});
   },
   
   export64: function() {
@@ -297,18 +285,14 @@ var Engine = {
     });
   },
   
-  import64: function() {
-    var string64 = prompt("put the save code here.","");
-    string64 = string64.replace(/\s/g, '');
-    string64 = string64.replace(/\./g, '');
-    string64 = string64.replace(/\n/g, '');
-    var decodedSave = Base64.decode(string64);
-    localStorage.gameState = decodedSave;
-	Engine.loadGame();
-	//console.log(decodedSave);
-	$(Multiplayer).on('savedPlayerData',function(e){location.reload()});
-	Engine.saveGame();
-    //location.reload();
+  import64: function(string64) {
+	  Engine.disableSelection();
+      string64 = string64.replace(/\s/g, '');
+      string64 = string64.replace(/\./g, '');
+      string64 = string64.replace(/\n/g, '');
+      var decodedSave = Base64.decode(string64);
+      localStorage.gameState = decodedSave;
+      location.reload();
   },
   
 	event: function(cat, act) {
@@ -616,15 +600,6 @@ var Engine = {
 		
 	}
 };
-
-function getUrlVars() {
-    var vars = {};
-    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
-        vars[key] = value;
-    });
-    return vars;
-}
-
 
 //create jQuery Callbacks() to handle object events 
 $.Dispatch = function( id ) {

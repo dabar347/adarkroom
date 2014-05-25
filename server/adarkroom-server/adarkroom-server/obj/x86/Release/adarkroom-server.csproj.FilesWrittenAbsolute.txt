@@ -1,0 +1,6 @@
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/obj/x86/Release/.NETFramework,Version=v4.0.AssemblyAttribute.cs
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/bin/Release/adarkroom-server.exe.mdb
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/bin/Release/adarkroom-server.exe
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/obj/x86/Release/adarkroom-server.exe
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/obj/x86/Release/adarkroom-server.exe.mdb
+/Users/dabar347/adarkroom/server/adarkroom-server/adarkroom-server/bin/Release/websocket-sharp.dll

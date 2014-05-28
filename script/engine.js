@@ -6,7 +6,7 @@ var Engine = {
 	 * 	  value-change events. These events should be fired whenever a value (or group of values, I suppose) is updated.
 	 * 	  That would be so elegant and awesome.
 	 */
-	SITE_URL: encodeURIComponent(Multiplayer.webSocketHost),
+	SITE_URL: encodeURIComponent(Multiplayer.webSocketURI),
 	VERSION: 1.3,
 	MAX_STORE: 99999999999999,
 	SAVE_DISPLAY: 30 * 1000,
@@ -160,7 +160,7 @@ var Engine = {
 		}
 		
 		Engine.travelTo(Room);
-		Multiplayer.webSocketHandShake();
+		Multiplayer.initMultiplayer();
 	},
 	
 	browserValid: function() {
@@ -184,7 +184,7 @@ var Engine = {
 				Engine._lastNotify = Date.now();
 			}
 			localStorage.gameState = JSON.stringify(State);
-			Multiplayer.webSocketSendState(localStorage.gameState);
+			Multiplayer.webSocketSendState(localStorage.gameState,JSON.stringify($SM.get('game.world.map')));
 		}
 	},
 	
@@ -195,6 +195,10 @@ var Engine = {
 				State = savedState;
 				$SM.updateOldState();
 				Engine.log("loaded save!");
+			} else {
+				State = {};
+				$SM.set('version', Engine.VERSION);
+				Engine.event('progress', 'new game');
 			}
 		} catch(e) {
 			State = {};

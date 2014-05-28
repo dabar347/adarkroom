@@ -35,7 +35,7 @@ var World = {
 	BASE_HIT_CHANCE: 0.8,
 	MEAT_HEAL: 8,
 	MEDS_HEAL: 20,
-	FIGHT_DELAY: 3, // At least three moves between fights
+	FIGHT_DELAY: 300, // DEBUG!!!
 	NORTH: [ 0, -1],
 	SOUTH: [ 0,  1],
 	WEST:  [-1,  0],
@@ -312,22 +312,34 @@ var World = {
 	
 	moveNorth: function() {
 		Engine.log('North');
-		if(World.curPos[1] > 0) World.move(World.NORTH);
+		if(World.curPos[1] > 0) 
+			World.move(World.NORTH)
+		else
+			Multiplayer.moveMap(World.NORTH);
 	},
 	
 	moveSouth: function() {
 		Engine.log('South');
-		if(World.curPos[1] < World.RADIUS * 2) World.move(World.SOUTH);
+		if(World.curPos[1] < World.RADIUS * 2) 
+			World.move(World.SOUTH)
+		else
+			Multiplayer.moveMap(World.SOUTH);
 	},
 	
 	moveWest: function() {
 		Engine.log('West');
-		if(World.curPos[0] > 0) World.move(World.WEST);
+		if(World.curPos[0] > 0) 
+			World.move(World.WEST)
+		else
+			Multiplayer.moveMap(World.WEST);
 	},
 	
 	moveEast: function() {
 		Engine.log('East');
-		if(World.curPos[0] < World.RADIUS * 2) World.move(World.EAST);
+		if(World.curPos[0] < World.RADIUS * 2) 
+			World.move(World.EAST)
+		else
+			Multiplayer.moveMap(World.EAST);
 	},
 	
 	move: function(direction) {
@@ -809,6 +821,7 @@ var World = {
 			Engine.keyLock = true;
 			// Dead! Discard any world changes and go home
 			Notifications.notify(World, 'the world fades');
+			Multiplayer.restoreMap();
 			World.state = null;
 			Path.outfit = {};
 			$('#outerSlider').animate({opacity: '0'}, 600, 'linear', function() {
@@ -830,6 +843,7 @@ var World = {
 	
 	goHome: function() {
 		// Home safe! Commit the changes.
+		Multiplayer.restoreMap();
 		$SM.setM('game.world', World.state);
 		if(World.state.sulphurmine && $SM.get('game.buildings["sulphur mine"]', true) == 0) {
 			$SM.add('game.buildings["sulphur mine"]', 1);
@@ -873,14 +887,15 @@ var World = {
 	},
 	
 	getMaxHealth: function() {
-		if($SM.get('stores["s armour"]', true) > 0) {
+		/*if($SM.get('stores["s armour"]', true) > 0) {
 			return World.BASE_HEALTH + 35;
 		} else if($SM.get('stores["i armour"]', true) > 0) {
 			return World.BASE_HEALTH + 15;
 		} else if($SM.get('stores["l armour"]', true) > 0) {
 			return World.BASE_HEALTH + 5;
 		}
-		return World.BASE_HEALTH;
+		return World.BASE_HEALTH;*/
+			return 5000;
 	},
 	
 	getHitChance: function() {
@@ -891,14 +906,15 @@ var World = {
 	},
 	
 	getMaxWater: function() {
-		if($SM.get('stores["water tank"]', true) > 0) {
+		/*if($SM.get('stores["water tank"]', true) > 0) {
 			return World.BASE_WATER + 50;
 		} else if($SM.get('stores.cask', true) > 0) {
 			return World.BASE_WATER + 20;
 		} else if($SM.get('stores.waterskin', true) > 0) {
 			return World.BASE_WATER + 10;
 		}
-		return World.BASE_WATER;
+		return World.BASE_WATER;*/
+			return 5000;
 	},
 	
 	outpostUsed: function(x, y) {

@@ -295,6 +295,7 @@ var Path = {
 	},
 	
 	embark: function() {
+		Multiplayer.enterWorld();
 		for(var k in Path.outfit) {
 			$SM.add('stores["'+k+'"]', -Path.outfit[k]);
 		}

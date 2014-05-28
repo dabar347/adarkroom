@@ -1,11 +1,21 @@
 var Multiplayer = {
 	
-	initMultiplayer : function()
+	USERNAME: getUrlVars()['username'],
+	
+	
+	//Init stages
+	initMultiplayer1 : function()
 	{
 		//Init WebSocket
 		Multiplayer.webSocketHandShake();
-		
-		//Init maps and masks (|world);
+	},
+	
+	initMultiplayer2 : function()
+	{
+		Multiplayer.handsShaked = true;
+		Multiplayer.playerMapY = (Multiplayer.playerNumber - 1) / 4 | 0;
+		Multiplayer.playerMapX = Multiplayer.playerNumber - 1 - Multiplayer.playerMapY * 4;
+		Multiplayer.webSocketLoadState();
 		Multiplayer.initMasks();
 	},
 	
@@ -14,6 +24,9 @@ var Multiplayer = {
 	*/
 	
 	//Map piece
+	playerMapX: 0,
+	playerMapY: 0,
+	
 	playerMap: "undefined",
 	playerNumber: 0,
 	xMap: 0,
@@ -22,6 +35,41 @@ var Multiplayer = {
 	masks: [],
 	tempMasks: [],
 	
+	enterWorld : function()
+	{
+		//prepare temporary masks
+		for (var i = 0; i<4; i++)
+		{
+			for (var j = 0; j<4; j++)
+			{
+				Multiplayer.tempMasks[i][j] = Multiplayer.masks[i][j];
+			}
+		}
+		
+	},
+	
+	dieWorld : function()
+	{
+		Multiplayer.restoreMap();
+	},
+	
+	escapeWorld : function()
+	{
+		for (var i = 0; i<4; i++)
+		{
+			for (var j = 0; j<4; j++)
+			{
+				 Multiplayer.masks[i][j] = Multiplayer.tempMasks[i][j];
+				 if(Multiplayer.masks[i][j] !== "undefined")
+				 {
+					 Multiplayer.webSocketSaveMask(i,j,Multiplayer.masks[i][j]);
+				 }
+			}
+		}
+		Multiplayer.dieWorld();
+		//Save all masks
+	},
+	
 	initMasks: function()
 	{
 		for (var i = 0; i<4; i++)
@@ -29,7 +77,7 @@ var Multiplayer = {
 			Multiplayer.masks[i] = []
 			for (var j = 0; j<4; j++)
 			{
-				Multiplayer.masks[j] = "undefined";
+				Multiplayer.masks[i][j] = "undefined";
 			}
 		}
 		for (var i = 0; i<4; i++)
@@ -37,18 +85,18 @@ var Multiplayer = {
 			Multiplayer.tempMasks[i] = []
 			for (var j = 0; j<4; j++)
 			{
-				Multiplayer.tempMasks[j] = "undefined";
+				Multiplayer.tempMasks[i][j] = "undefined";
 			}
 		}
 		Multiplayer.webSocketLoadAllMasks();
-	}
+	},
 	
 	recieveMask : function(string)
 	{
 		var array = string.split('&');
 		if (array[2] !== "undefined")
 		{
-			masks[array[0]][array[1]] = array[2];
+			Multiplayer.masks[array[0]][array[1]] = array[2];
 		}
 	},
 	
@@ -69,9 +117,20 @@ var Multiplayer = {
 			//Apply map
 			restoredMap = JSON.parse(map);
 			World.state.map = restoredMap;
+			//Save previous mask
+			Multiplayer.tempMasks[Multiplayer.playerMapX+Multiplayer.xMap][Multiplayer.playerMapY+Multiplayer.yMap] = JSON.stringify(World.state.mask);
 			//Change map pieces vars
 			Multiplayer.xMap += Multiplayer.vector[0];
 			Multiplayer.yMap += Multiplayer.vector[1];
+			//Apply new mask
+			if (Multiplayer.tempMasks[Multiplayer.playerMapX+Multiplayer.xMap][Multiplayer.playerMapY+Multiplayer.yMap] !== "undefined")
+			{
+				World.state.mask = JSON.parse(Multiplayer.tempMasks[Multiplayer.playerMapX+Multiplayer.xMap][Multiplayer.playerMapY+Multiplayer.yMap]);
+			}
+			else
+			{
+				World.state.mask = World.newMask();
+			}
 			//console.log(restoredMap);
 			//Change the position of the character
 			World.move([-Multiplayer.vector[0]*60,-Multiplayer.vector[1]*60]);
@@ -103,7 +162,13 @@ var Multiplayer = {
 	/*
 	WebSocket-ADarkRoom-protocol:
 	Packet:
-	%USERNAME%!%OPCODE%!%DATA%
+		Client:
+		%USERNAME%!%OPCODE%!%DATA%
+		Server:
+		%OPCODE%!%DATA%
+	
+	Separated data:
+		%DATA%=%1%&%2%&...&%n%
 	
 	OpCodes(client):
 	CONNECT - hand shake command; prepare server to send/recieve particular player data;
@@ -114,11 +179,13 @@ var Multiplayer = {
 		Example: %UN%!SEND_CUSTOM_MAP!%x%&%y%&%MAP_DATA%
 			Where: %x% and %y% relative 
 	LOAD_MAP - request current player map from server to be loaded;
-	SAVE_MASK - save mask to server
-	LOAD_ALL_MASK - load masks for current player
+	SAVE_ALL_MASK - save mask for current player;
+	LOAD_ALL_MASK - load masks for current player;
 	
 	
 	OpCodes(server):
+	OK - command is OK;
+	PLAYER - return player number; confirmation of handshake;
 	STATE - player state of current player;
 	MAP - requested map;
 	MASK - requested mask;
@@ -131,7 +198,7 @@ var Multiplayer = {
 	recievedData: undefined,
 	webSocketClient: undefined,
 	
-	USERNAME: getUrlVars()['username'],
+	
 	playerInitialized: false,
 	trial: 0,
 	loaded: false,
@@ -154,7 +221,11 @@ var Multiplayer = {
 			switch(data[0])
 			{
 				case "OK":
-					Multiplayer.handsShaked = true;
+					
+					break;
+				case "PLAYER":
+					Multiplayer.playerNumber = data[1];
+					Multiplayer.initMultiplayer2();
 					break;
 				case "STATE":
 					//console.log(data[1]);
@@ -166,12 +237,13 @@ var Multiplayer = {
 					Multiplayer.moveMap2(data[1]);
 					break;
 				case "MASK":
-					
+					Multiplayer.recieveMask(data[1]);
+					break;
 			}
 			//console.log("Recieved: " + data[0]);
 			if(Multiplayer.handsShaked && !Multiplayer.loaded)
 			{
-				Multiplayer.webSocketLoadState();
+				
 				//Multiplayer.moveMap([0,0]);
 			}
 		}
@@ -220,6 +292,11 @@ var Multiplayer = {
 	webSocketLoadAllMasks : function()
 	{
 		Multiplayer.send("LOAD_ALL_MASKS!");
+	},
+	
+	webSocketSaveMask : function(x,y,mask)
+	{
+		Multiplayer.send("SAVE_MASK!"+x+"&"+y+"&"+mask);
 	},
 	
 	send : function(data)

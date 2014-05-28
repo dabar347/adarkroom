@@ -148,7 +148,7 @@ namespace adarkroomserver
 				{
 				case "CONNECT":
 					NewPlayer (data [0]);
-					OK ();
+					Send ("PLAYER!" + playerList.Find (x => x.username == data [0]).playerNumber);
 					break;
 				case "SAVE_STATE":
 					playerList.Find (x => x.username == data [0]).playerData = data [2];
@@ -160,21 +160,21 @@ namespace adarkroomserver
 				case "SAVE_MAP":
 					//byte x = n - y * 4;
 					n = (byte)(playerList.Find (x => x.username == data [0]).playerNumber);
-					y = (byte)(n / 4);
-					maps [(byte)(n - y * 4 - 1), (byte)(n / 4)] = data [2];
+					y = (byte)((n-1) / 4);
+					maps [(byte)(n - 1 - y * 4), (byte)y] = data [2];
 					OK ();
 					break;
 				case "LOAD_CUSTOM_MAP":
 					n = (byte)(playerList.Find (x => x.username == data [0]).playerNumber);
-					y = (byte)(n / 4);
+					y = (byte)((n - 1) / 4);
 					string[] coordinates = data [2].Split ('&');
 					int _x = Convert.ToInt32 (coordinates [0]);
 					int _y = Convert.ToInt32 (coordinates [1]);
 					string request = "";
-					if ((n - y * 4 - 1 + _x) < 0 || (n - y * 4 - 1 + _x) > 3 || (y + _y) < 0 || (y + _y) > 3) {
+					if ((n - 1 - y * 4 + _x) < 0 || (n - 1 - y * 4 + _x) > 3 || (y + _y) < 0 || (y + _y) > 3) {
 						request = "undefined";
 					} else {
-						request = maps [(byte)(n - y * 4 - 1 + _x), (byte)(y + _y)];
+						request = maps [(byte)(n - 1 - y * 4 + _x), (byte)(y + _y)];
 					}
 					Send("MAP!"+request);
 					break;

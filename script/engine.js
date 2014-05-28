@@ -160,7 +160,7 @@ var Engine = {
 		}
 		
 		Engine.travelTo(Room);
-		Multiplayer.initMultiplayer();
+		Multiplayer.initMultiplayer1();
 	},
 	
 	browserValid: function() {

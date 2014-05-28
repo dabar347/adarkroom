@@ -27,7 +27,7 @@ var World = {
 	STICKINESS: 0.5, // 0 <= x <= 1
 	LIGHT_RADIUS: 2,
 	BASE_WATER: 10,
-	MOVES_PER_FOOD: 2,
+	MOVES_PER_FOOD: 500,// DEBUG!!!
 	MOVES_PER_WATER: 1,
 	DEATH_COOLDOWN: 120,
 	FIGHT_CHANCE: 0.20,
@@ -815,13 +815,13 @@ var World = {
 	
 	die: function() {
 		if(!World.dead) {
+			Multiplayer.dieWorld();
 			World.dead = true;
 			Engine.log('player death');
 			Engine.event('game event', 'death');
 			Engine.keyLock = true;
 			// Dead! Discard any world changes and go home
 			Notifications.notify(World, 'the world fades');
-			Multiplayer.restoreMap();
 			World.state = null;
 			Path.outfit = {};
 			$('#outerSlider').animate({opacity: '0'}, 600, 'linear', function() {
@@ -843,7 +843,7 @@ var World = {
 	
 	goHome: function() {
 		// Home safe! Commit the changes.
-		Multiplayer.restoreMap();
+		Multiplayer.escapeWorld();
 		$SM.setM('game.world', World.state);
 		if(World.state.sulphurmine && $SM.get('game.buildings["sulphur mine"]', true) == 0) {
 			$SM.add('game.buildings["sulphur mine"]', 1);

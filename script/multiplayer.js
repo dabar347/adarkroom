@@ -28,6 +28,7 @@ var Multiplayer = {
 	playerMapY: 0,
 	
 	playerMap: "undefined",
+	playerMask: "undefined",
 	playerNumber: 0,
 	xMap: 0,
 	yMap: 0,
@@ -155,8 +156,33 @@ var Multiplayer = {
 	restoreMap: function()
 	{
 		if (Multiplayer.playerMap !== "undefined") World.state.map = Multiplayer.playerMap;
-		xMap = 0;
-		yMap = 0;
+		if (Multiplayer.playerMask !== "undefined") World.state.mask = Multiplayer.playerMask;
+		Multiplayer.xMap = 0;
+		Multiplayer.yMap = 0;
+	},
+	
+	//Outposts
+	checkOutpost: function(input)
+	{
+		/*
+		Returns:
+			1 - your own outpost
+			2 - forreign outpost
+			3 - not an outpost
+		*/
+		if (input >= 0 && input <= 15)
+		{
+			if (input == Multiplayer.playerNumber) return 1; else return 2;
+		}
+		else
+		{
+			return 3;
+		}
+	},
+	
+	generateOutpost: function()
+	{
+		return Multiplayer.playerNumber;
 	},
 	
 	/*
@@ -273,7 +299,8 @@ var Multiplayer = {
 			if (Multiplayer.xMap == 0 && Multiplayer.yMap == 0)	
 			{
 				Multiplayer.send("SAVE_MAP!"+map);
-				Multiplayer.playerMap = $SM.get('game.world.map')
+				Multiplayer.playerMap = $SM.get('game.world.map');
+				Multiplayer.playerMask = $SM.get('game.world.mask');
 			}
 			Multiplayer.send("SAVE_STATE!"+state);
 		}

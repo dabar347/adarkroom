@@ -28,6 +28,13 @@
 	line-height: 0px; /* Hack to prevent the boldness from increasing the row's line-height. I hope it works in all browsers... */
 }
 
+#map .enemyOutpost {
+	position: relative;
+	font-weight: bold;
+	color: red;
+	line-height: 0px; /* Hack to prevent the boldness from increasing the row's line-height. I hope it works in all browsers... */
+}
+
 #bagspace-world {
 	border: 1px solid black;
 	height: 62px;

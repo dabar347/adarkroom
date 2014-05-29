@@ -20,7 +20,8 @@ var World = {
 		BOREHOLE: 'B',
 		BATTLEFIELD: 'F',
 		SWAMP: 'M',
-    CACHE: 'U'
+    	CACHE: 'U',
+		ENEMY_OUTPOST: 'q',
 	},
 	TILE_PROBS: {},
 	LANDMARKS: {},
@@ -117,6 +118,7 @@ var World = {
 		
 		// Setpiece definitions
 		World.LANDMARKS[World.TILE.OUTPOST] = { num: 0, minRadius: 0, maxRadius: 0, scene: 'outpost', label: 'An&nbsp;Outpost' };
+		World.LANDMARKS[World.TILE.ENEMY_OUTPOST] = { num: 0, minRadius: 0, maxRadius: 0, scene: 'enemyOutpost', label: 'An&nbsp;Enemy&nbsp;Outpost' };
 		World.LANDMARKS[World.TILE.IRON_MINE] = { num: 1, minRadius: 5, maxRadius: 5, scene: 'ironmine', label: 'Iron&nbsp;Mine' };
 		World.LANDMARKS[World.TILE.COAL_MINE] = { num: 1, minRadius: 10, maxRadius: 10, scene: 'coalmine', label: 'Coal&nbsp;Mine' };
 		World.LANDMARKS[World.TILE.SULPHUR_MINE] = { num: 1, minRadius: 20, maxRadius: 20, scene: 'sulphurmine', label: 'Sulphur&nbsp;Mine' };
@@ -162,7 +164,8 @@ var World = {
 	
 	clearDungeon: function() {
 		Engine.event('progress', 'dungeon cleared');
-		World.state.map[World.curPos[0]][World.curPos[1]] = World.TILE.OUTPOST;
+		World.state.map[World.curPos[0]][World.curPos[1]] = Multiplayer.generateOutpost();
+		//World.state.map[World.curPos[0]][World.curPos[1]] = World.TILE.OUTPOST;
 		World.drawRoad();
 	},
 	
@@ -538,6 +541,13 @@ var World = {
 			if(curTile != World.TILE.OUTPOST || !World.outpostUsed()) {
 				Events.startEvent(Events.Setpieces[World.LANDMARKS[curTile].scene]);
 			}
+		} else if(Multiplayer.checkOutpost(curTile) == 1) {
+			if(!World.outpostUsed())
+			{
+				Events.startEvent(Events.Setpieces[World.LANDMARKS['P'].scene]);
+			}
+		} else if(Multiplayer.checkOutpost(curTile) == 2){
+			Events.startEvent(Events.Setpieces[World.LANDMARKS['q'].scene]);
 		} else {
 			if(World.useSupplies()) {
 				World.checkFight();
@@ -789,20 +799,41 @@ var World = {
 					mapString += '<span class="landmark">@<div class="tooltip ' + ttClass + '">Wanderer</div></span>';
 				} else if(World.state.mask[i][j]) {
 					var c = World.state.map[i][j];
-					switch(c) {
-						case World.TILE.VILLAGE:
-							mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">The&nbsp;Village</div></span>';
-							break;
-						default:
-							if(typeof World.LANDMARKS[c] != 'undefined' && (c != World.TILE.OUTPOST || !World.outpostUsed(i, j))) {
-								mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">' + World.LANDMARKS[c].label + '</div></span>';
-							} else {
-								if(c.length > 1) {
-									c = c[0];
-								}
-								mapString += c;
+					if (Multiplayer.checkOutpost(c) != 3)
+					{
+						if (Multiplayer.checkOutpost(c) == 1)
+						{
+							if(!World.outpostUsed(i, j))
+							{
+								mapString += '<span class="landmark">P<div class="tooltip' + ttClass + '">' + World.LANDMARKS[World.TILE.OUTPOST].label + '</div></span>';
+							} 
+							else
+							{
+								mapString += 'P';
 							}
-							break;
+						}
+						else
+						{
+							mapString += '<span class="enemyOutpost">P<div class="tooltip' + ttClass + '">' + World.LANDMARKS[World.TILE.ENEMY_OUTPOST].label + '</div></span>';
+						}
+					}
+					else
+					{
+						switch(c) {
+							case World.TILE.VILLAGE:
+								mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">The&nbsp;Village</div></span>';
+								break;
+							default:
+								if(typeof World.LANDMARKS[c] != 'undefined' && (c != World.TILE.OUTPOST || !World.outpostUsed(i, j))) {
+									mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">' + World.LANDMARKS[c].label + '</div></span>';
+								} else {
+									if(c.length > 1) {
+										c = c[0];
+									}
+									mapString += c;
+								}
+								break;
+						}
 					}
 				} else {
 					mapString += '&nbsp;';

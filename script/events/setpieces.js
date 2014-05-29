@@ -29,6 +29,33 @@ Events.Setpieces = {
 			}
 		}
 	},
+	"enemyOutpost": { /* Enemy Outpost */
+		title: 'An Enemy Outpost',
+		scenes: {
+			'start': {
+				text: [
+					'you can currently do nothing with this.'
+				],
+				notification: 'you can currently do nothing with this.',
+				loot: {
+					'cured meat': {
+						min: 5,
+						max: 10,
+						chance: 1
+					}
+				},
+				onLoad: function() {
+					//World.useOutpost();
+				},
+				buttons: {
+					'leave': {
+						text: 'leave',
+						nextScene: 'end'
+					}
+				}
+			}
+		}
+	},
 	"swamp": { /* Swamp */
 		title: 'A Murky Swamp',
 		scenes: {

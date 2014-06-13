@@ -28,7 +28,7 @@ var World = {
 	STICKINESS: 0.5, // 0 <= x <= 1
 	LIGHT_RADIUS: 2,
 	BASE_WATER: 10,
-	MOVES_PER_FOOD: 500,// DEBUG!!!
+	MOVES_PER_FOOD: 3,// DEBUG!!!
 	MOVES_PER_WATER: 1,
 	DEATH_COOLDOWN: 120,
 	FIGHT_CHANCE: 0.20,
@@ -36,7 +36,7 @@ var World = {
 	BASE_HIT_CHANCE: 0.8,
 	MEAT_HEAL: 8,
 	MEDS_HEAL: 20,
-	FIGHT_DELAY: 300, // DEBUG!!!
+	FIGHT_DELAY: 3, // DEBUG!!!
 	NORTH: [ 0, -1],
 	SOUTH: [ 0,  1],
 	WEST:  [-1,  0],
@@ -167,6 +167,7 @@ var World = {
 		World.state.map[World.curPos[0]][World.curPos[1]] = Multiplayer.generateOutpost();
 		//World.state.map[World.curPos[0]][World.curPos[1]] = World.TILE.OUTPOST;
 		World.drawRoad();
+		Multiplayer.webSocketSaveCustomMap(Multiplayer.xMap,Multiplayer.yMap,World.state.map);
 	},
 	
 	drawRoad: function() {
@@ -345,7 +346,12 @@ var World = {
 			Multiplayer.moveMap(World.EAST);
 	},
 	
-	move: function(direction) {
+	move:function(direction) {
+		Multiplayer.playerStepFlag = [true, direction];
+		Multiplayer.webSocketLoadMap(Multiplayer.xMap,Multiplayer.yMap);
+	},
+	
+	_move: function(direction) {
 		var oldTile = World.state.map[World.curPos[0]][World.curPos[1]];
 		World.curPos[0] += direction[0];
 		World.curPos[1] += direction[1];
@@ -918,14 +924,14 @@ var World = {
 	},
 	
 	getMaxHealth: function() {
-		/*if($SM.get('stores["s armour"]', true) > 0) {
+		if($SM.get('stores["s armour"]', true) > 0) {
 			return World.BASE_HEALTH + 35;
 		} else if($SM.get('stores["i armour"]', true) > 0) {
 			return World.BASE_HEALTH + 15;
 		} else if($SM.get('stores["l armour"]', true) > 0) {
 			return World.BASE_HEALTH + 5;
 		}
-		return World.BASE_HEALTH;*/
+		return World.BASE_HEALTH;
 			return 5000;
 	},
 	
@@ -937,14 +943,14 @@ var World = {
 	},
 	
 	getMaxWater: function() {
-		/*if($SM.get('stores["water tank"]', true) > 0) {
+		if($SM.get('stores["water tank"]', true) > 0) {
 			return World.BASE_WATER + 50;
 		} else if($SM.get('stores.cask', true) > 0) {
 			return World.BASE_WATER + 20;
 		} else if($SM.get('stores.waterskin', true) > 0) {
 			return World.BASE_WATER + 10;
 		}
-		return World.BASE_WATER;*/
+		return World.BASE_WATER;
 			return 5000;
 	},
 	

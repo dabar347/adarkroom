@@ -9,54 +9,33 @@ namespace adarkroomserver
 	class MapCollection
 	{
 		string baseDir = AppDomain.CurrentDomain.BaseDirectory+"data/";
-		private string[,] maps = new string[4,4];
 
 		public MapCollection()
 		{
-			for (byte i = 0; i < 4; i++) {
-				for (byte j = 0; j < 4; j++) {
-					maps [i, j] = "undefined";
-				}
-			}
-			LoadAllMaps ();
 		}
 
-		public void LoadAllMaps()
+		private void SaveMap (byte x, byte y, string value)
 		{
-			for (byte i = 0; i < 4; i++) {
-				for (byte j = 0; j < 4; j++) {
-					if (System.IO.File.Exists(baseDir + "/maps/"+i+"."+j+".map"))
-					{
-						maps[i,j] = (System.IO.File.ReadAllLines (baseDir + "/maps/" + i + "." + j + ".map"))[0];
-					}
-					else
-					{
-						maps [i, j] = "undefined";
-					}
-				}
-			}
-		}
-
-
-
-
-
-		private void SaveMap (byte x, byte y)
-		{
-			System.IO.File.WriteAllText (baseDir+"/maps/"+x+"."+y+".map",maps[x,y]);
+			System.IO.File.WriteAllText (baseDir+"/maps/"+x+"."+y+".map",value);
 		}
 
 		public string this[byte x,byte y]
 		{
 			get
 			{
-				return maps[x,y];
+				if (System.IO.File.Exists(baseDir + "/maps/"+x+"."+y+".map"))
+				{
+					return (System.IO.File.ReadAllLines (baseDir + "/maps/" + x + "." + y + ".map"))[0];
+				}
+				else
+				{
+					return "undefined";
+				}
 			}
 
 			set 
 			{
-				maps [x,y] = value;
-				SaveMap (x, y);
+				SaveMap (x, y, value);
 			}
 		}
 	}
@@ -64,54 +43,36 @@ namespace adarkroomserver
 	class MaskCollection
 	{
 		string baseDir = AppDomain.CurrentDomain.BaseDirectory+"data/players/";
-		private string[,] masks = new string[4,4];
 
 		public MaskCollection (string player)
 		{
-			baseDir += player + "/masks/";
-			for (byte i = 0; i < 4; i++) {
-				for (byte j = 0; j < 4; j++) {
-					masks [i, j] = "undefined";
-				}
-			}
 			if (!System.IO.Directory.Exists (baseDir))
 				System.IO.Directory.CreateDirectory (baseDir);
-			LoadAllMasks ();
 		}
 
 		public string this[byte x,byte y]
 		{
 			get
 			{
-				return masks[x,y];
+				if (System.IO.File.Exists(baseDir+x+"."+y+".mask"))
+				{
+					return (System.IO.File.ReadAllLines (baseDir+x+"."+y+".mask"))[0];
+				}
+				else
+				{
+					return "undefined";
+				}
 			}
 
 			set 
 			{
-				masks [x,y] = value;
-				SaveMask (x, y);
+				SaveMask (x, y, value);
 			}
 		}
 
-		public void LoadAllMasks()
+		private void SaveMask(byte x, byte y, string value)
 		{
-			for (byte i = 0; i < 4; i++) {
-				for (byte j = 0; j < 4; j++) {
-					if (System.IO.File.Exists(baseDir+i+"."+j+".mask"))
-					{
-						masks[i,j] = (System.IO.File.ReadAllLines (baseDir+i+"."+j+".mask"))[0];
-					}
-					else
-					{
-						masks [i, j] = "undefined";
-					}
-				}
-			}
-		}
-
-		private void SaveMask(byte x, byte y)
-		{
-			System.IO.File.WriteAllText (baseDir+x+"."+y+".mask",masks[x,y]);
+			System.IO.File.WriteAllText (baseDir+x+"."+y+".mask",value);
 		}
 	}
 
@@ -134,7 +95,8 @@ namespace adarkroomserver
 
 	class AdarkroomService : WebSocketService
 	{
-		List<Player> playerList = new List<Player>();
+		//List<Player> playerList = new List<Player>();
+		Player player;
 		MapCollection maps = new MapCollection();
 
 		protected override void OnMessage (MessageEventArgs e)
@@ -148,24 +110,33 @@ namespace adarkroomserver
 				{
 				case "CONNECT":
 					NewPlayer (data [0]);
-					Send ("PLAYER!" + playerList.Find (x => x.username == data [0]).playerNumber);
+					//Send ("PLAYER!" + playerList.Find (x => x.username == data [0]).playerNumber);
+					Send ("PLAYER!" + player.playerNumber);
+					//Send ("NOTIFICATION!you've connected to server as player " + playerList.Find (x => x.username == data [0]).playerNumber);
+					Send ("NOTIFICATION!you've connected to server as player " + player.playerNumber);
 					break;
 				case "SAVE_STATE":
-					playerList.Find (x => x.username == data [0]).playerData = data [2];
+					player.playerData = data [2];
 					OK ();
 					break;
 				case "LOAD_STATE":
-					Send ("STATE!" + playerList.Find (x => x.username == data [0]).playerData);
+					Send ("STATE!" + player.playerData);
 					break;
 				case "SAVE_MAP":
 					//byte x = n - y * 4;
-					n = (byte)(playerList.Find (x => x.username == data [0]).playerNumber);
+					n = (byte)(player.playerNumber);
 					y = (byte)((n-1) / 4);
 					maps [(byte)(n - 1 - y * 4), (byte)y] = data [2];
 					OK ();
 					break;
+				case "SAVE_CUSTOM_MAP":
+					n = (byte)(player.playerNumber);
+					y = (byte)((n - 1) / 4);
+					maps [(byte)(n - 1 - y * 4 + Convert.ToInt32 (data [2].Split ('&')[0])), (byte)(y + Convert.ToInt32 (data [2].Split ('&')[1]))] = data [2].Split ('&')[2];
+					OK ();
+					break;
 				case "LOAD_CUSTOM_MAP":
-					n = (byte)(playerList.Find (x => x.username == data [0]).playerNumber);
+					n = (byte)(player.playerNumber);
 					y = (byte)((n - 1) / 4);
 					string[] coordinates = data [2].Split ('&');
 					int _x = Convert.ToInt32 (coordinates [0]);
@@ -178,18 +149,23 @@ namespace adarkroomserver
 					}
 					Send("MAP!"+request);
 					break;
+				case "LOAD_CUSTOM_STATE": //Temp player
+					Player tempPlayer = new Player(Convert.ToInt32(data[2]));
+
+					Send ("CUSTOM_STATE!"+tempPlayer.playerData);
+					break;
 				case "SAVE_MASK":
 					//byte x = n - y * 4;
 					string[] splited = data [2].Split ('&');
 					byte[] coord = new byte[2];
 					coord [0] = Convert.ToByte (splited [0]);
 					coord [1] = Convert.ToByte (splited [1]);
-					playerList.Find (x => x.username == data [0]).masks [coord [0], coord [1]] = splited [2];
+					player.masks [coord [0], coord [1]] = splited [2];
 					break;
 				case "LOAD_ALL_MASKS":
 					for (byte i = 0; i < 4; i++) {
 						for (byte j = 0; j < 4; j++) {
-							Send ("MASK!" + i + "&" + j + "&" + playerList.Find (x => x.username == data [0]).masks [i, j]);
+							Send ("MASK!" + i + "&" + j + "&" + player.masks [i, j]);
 						}
 					}
 					break;
@@ -204,13 +180,7 @@ namespace adarkroomserver
 
 		void NewPlayer(string username)
 		{
-			bool flag = false;
-			foreach (Player v in playerList) {
-				if (v.username == username)
-					flag = true;
-			}
-			if (!flag)
-				this.playerList.Add (new Player (username));
+			this.player = new Player (username);
 		}
 
 		void OK()
@@ -246,6 +216,18 @@ namespace adarkroomserver
 			this.username = username;
 			//Console.WriteLine (baseDir);
 			this.playerNumber = ReturnPlayerNumber ();
+			if (!System.IO.Directory.Exists (baseDir + "/players/" + username + "/"))
+				System.IO.Directory.CreateDirectory (baseDir + "/players/" + username + "/");
+			this._playerData = ReturnPlayerData ();
+			masks = new MaskCollection (username);
+			Console.WriteLine ("Player loaded: " + this.playerNumber);
+		}
+
+		public Player (int number)
+		{
+			string[] allPlayers = System.IO.File.ReadAllLines (baseDir + "playerList");
+			this.username = allPlayers [number-1];
+			this.playerNumber = number;
 			if (!System.IO.Directory.Exists (baseDir + "/players/" + username + "/"))
 				System.IO.Directory.CreateDirectory (baseDir + "/players/" + username + "/");
 			this._playerData = ReturnPlayerData ();

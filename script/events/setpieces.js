@@ -2,6 +2,14 @@
  * Events that only occur at specific times. Launched manually.
  **/
 Events.Setpieces = {
+	
+	/*
+	Enemy outpost vars
+	*/
+	s:0,
+	d:0,
+	m:0,
+	win:0,
 	"outpost": { /* Friendly Outpost */
 		title: 'An Outpost',
 		scenes: {
@@ -34,27 +42,226 @@ Events.Setpieces = {
 		scenes: {
 			'start': {
 				text: [
-					'you can currently do nothing with this.'
+					"you're up to attack enemie's outpost."
 				],
-				notification: 'you can currently do nothing with this.',
-				loot: {
-					'cured meat': {
-						min: 5,
-						max: 10,
-						chance: 1
-					}
-				},
+				notification: "you're up to attack enemie's outpost.",
 				onLoad: function() {
 					//World.useOutpost();
+					EnemyOutpost.init();
+					Events.Setpieces.enemyOutpost.scenes.start.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.wait.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.m.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.d.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.s.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
 				},
 				buttons: {
+					'atack': {
+						text: 'enter',
+						nextScene: {
+							1 : EnemyOutpost.nextScene
+						}
+					},
 					'leave': {
 						text: 'leave',
 						nextScene: 'end'
 					}
 				}
+			},
+			'wait': {
+				text: [
+					"wait for the server to response.",
+					"you're up to attack enemie's outpost."
+				],
+				notification: "you're up to attack enemie's outpost.",
+				onLoad: function() {
+					//World.useOutpost();
+					EnemyOutpost.refresh();
+					Events.Setpieces.enemyOutpost.scenes.start.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.wait.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.m.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.d.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.s.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+				},
+				buttons: {
+					'atack': {
+						text: 'enter',
+						nextScene: {
+							1 : EnemyOutpost.nextScene
+						}
+					},
+					'leave': {
+						text: 'leave',
+						nextScene: 'end'
+					}
+				}
+			},
+			'm':{
+				notification: 'a frail man stands defiantly, blocking the path.',
+				combat: true,
+  				enemy: 'frail man',
+  				chara: 'M',
+  				damage: 1,
+  				hit: 0.8,
+  				attackDelay: 2,
+  				health: 10,
+  				loot: {
+  					'cured meat': {
+  						min: 1,
+  						max: 5,
+  						chance: 0.8
+  					},
+  					'cloth': {
+  						min: 1,
+  						max: 5,
+  						chance: 0.5
+  					},
+  					'leather': {
+  						min: 1,
+  						max: 1,
+  						chance: 0.2
+  					},
+  					'medicine': {
+  					  min: 1,
+  					  max: 3,
+  					  chance: 0.05
+  					}
+  				},
+				onLoad : function() {
+					EnemyOutpost.stage++;
+					EnemyOutpost.refresh();
+					Events.Setpieces.enemyOutpost.scenes.start.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.wait.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.m.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.d.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.s.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+				},
+		        buttons: {
+		        	'continue': {	
+						text: 'continue',
+						nextScene: {
+							1 : EnemyOutpost.nextScene
+						}
+					},
+					'leave': {
+						text: 'leave city',
+						nextScene: 'end'
+					}
+		        }
+			},
+			'd':{
+				notification: 'the soldier steps out from between the buildings, rifle raised.',
+				combat: true,
+  				enemy: 'soldier',
+				ranged: true,
+  				chara: 'D',
+  				damage: 8,
+  				hit: 0.8,
+  				attackDelay: 2,
+  				health: 50,
+  				loot: {
+  					'cured meat': {
+  						min: 1,
+  						max: 5,
+  						chance: 0.8
+  					},
+					'bullets': {
+						min: 1,
+						max: 5,
+						chance: 0.5
+					},
+					'rifle': {
+						min: 1,
+						max: 1,
+						chance: 0.2
+					}
+  				},
+				onLoad : function() {
+					EnemyOutpost.stage++;
+					EnemyOutpost.refresh();
+					Events.Setpieces.enemyOutpost.scenes.start.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.wait.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.m.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.d.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.s.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+				},
+		        buttons: {
+		        	'continue': {	
+						text: 'continue',
+						nextScene: {
+							1 : EnemyOutpost.nextScene
+						}
+					},
+					'leave': {
+						text: 'leave city',
+						nextScene: 'end'
+					}
+		        }
+			},
+			's':{
+				notification: 'the shot echoes in the empty street.',
+				combat: true,
+  				enemy: 'sniper',
+  				chara: 'S',
+  				damage: 15,
+  				hit: 0.8,
+  				attackDelay: 4,
+  				health: 30,
+				ranged: true,
+  				loot: {
+  					'cured meat': {
+  						min: 1,
+  						max: 5,
+  						chance: 0.8
+  					},
+					'bullets': {
+						min: 1,
+						max: 5,
+						chance: 0.5
+					},
+					'rifle': {
+						min: 1,
+						max: 1,
+						chance: 0.2
+					}
+  				},
+				onLoad : function() {
+					EnemyOutpost.stage++;
+					EnemyOutpost.refresh();
+					Events.Setpieces.enemyOutpost.scenes.start.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.wait.buttons.atack.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.m.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.d.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+					Events.Setpieces.enemyOutpost.scenes.s.buttons.continue.nextScene = { 1 : EnemyOutpost.nextScene };
+				},
+		        buttons: {
+		        	'continue': {	
+						text: 'continue',
+						nextScene: {
+							1 : EnemyOutpost.nextScene
+						}
+					},
+					'leave': {
+						text: 'leave city',
+						nextScene: 'end'
+					}
+		        }
+			},
+			'win':{
+				text: "you've captured the outpost",
+				onLoad: function() {
+					World.clearDungeon();
+				},
+				buttons:
+				{
+					'leave': {
+						text: 'leave',
+						nextScene: 'end'
+					}
+				}
+				
 			}
 		}
+		
 	},
 	"swamp": { /* Swamp */
 		title: 'A Murky Swamp',

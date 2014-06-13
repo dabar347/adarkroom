@@ -160,7 +160,7 @@ var Engine = {
 		}
 		
 		Engine.travelTo(Room);
-		Multiplayer.initMultiplayer1();
+		
 	},
 	
 	browserValid: function() {
@@ -184,7 +184,7 @@ var Engine = {
 				Engine._lastNotify = Date.now();
 			}
 			localStorage.gameState = JSON.stringify(State);
-			Multiplayer.webSocketSendState(localStorage.gameState,JSON.stringify($SM.get('game.world.map')));
+			Multiplayer.webSocketSendState(localStorage.gameState);
 		}
 	},
 	
@@ -624,5 +624,6 @@ $.Dispatch = function( id ) {
 };
 
 $(function() {
+	Multiplayer.initMultiplayer();
 	Engine.init();
 });

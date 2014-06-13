@@ -295,6 +295,11 @@ var Path = {
 	},
 	
 	embark: function() {
+		Multiplayer.playerEnterWorld = [true, undefined],
+		Multiplayer.webSocketLoadMap(0,0);
+	},
+	
+	_embark: function() {
 		Multiplayer.enterWorld();
 		for(var k in Path.outfit) {
 			$SM.add('stores["'+k+'"]', -Path.outfit[k]);

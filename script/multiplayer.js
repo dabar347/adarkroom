@@ -1,23 +1,98 @@
 var Multiplayer = {
 	
+	/*
+	TODO:
+	- Interaction between players
+		- Fight
+		- Trade
+		- ???
+	- Interaction player-enemyVillage
+	- Event for enemyOutposts
+	- Sort out situation if two players on one map.
+		- How to refresh changes
+	*/
+	
+	
 	USERNAME: getUrlVars()['username'],
 	
 	
 	//Init stages
-	initMultiplayer1 : function()
+	/*
+	0 - Web Socket connect
+	1 - Web Socket handshake
+	2 - Load player map
+	3 - Load player state
+	4 - Apply player state
+	5 - Apply player map
+	6 - Init and load masks
+	7 - Apply player mask
+	
+	999 - initialization is done
+	*/
+	
+	initStage: 0,
+	initMultiplayer : function()
 	{
-		//Init WebSocket
-		Multiplayer.webSocketHandShake();
+		console.log("Init stage "+Multiplayer.initStage)
+		switch(Multiplayer.initStage)
+		{
+		case 0:
+			Multiplayer.webSocketInit(); //Connect
+			break;
+		case 1:
+			Multiplayer.webSocketInitPlayer(); //HandShake
+			break;
+		case 2:
+			Multiplayer.webSocketLoadMapP();//Load player map
+			break;
+		case 3:
+			Multiplayer.webSocketLoadState();//Load player state
+			break;
+		case 4:
+			localStorage.gameState = JSON.stringify(Multiplayer.playerState);//Apply player state
+			Engine.loadGame();
+			Multiplayer.initStage++;
+			Multiplayer.initMultiplayer();
+			break;
+		case 5:
+			//$SM.set('game.world.map',Multiplayer.playerMap);//Apply map
+			if(Multiplayer.playerMap !== "undefined")
+			{
+				$SM.set('game.world.map',Multiplayer.playerMap);
+			}
+			else
+			{
+				$SM.set('game.world.map',World.generateMap());
+			}
+			Multiplayer.initStage++;
+			Multiplayer.initMultiplayer();
+			break;
+		case 6:
+			Multiplayer.initMasks();//Init and load masks
+			break;
+		case 7:
+			if(Multiplayer.masks[Multiplayer.playerMapX][Multiplayer.playerMapY] !== "undefined")
+			{
+				$SM.set('game.world.mask',JSON.parse(Multiplayer.masks[Multiplayer.playerMapX][Multiplayer.playerMapY]));
+			}
+			else
+			{
+				$SM.set('game.world.mask',World.newMask());
+			}
+			//Apply mask
+			Multiplayer.initStage++;
+			Multiplayer.initMultiplayer();
+			break;
+		default:
+			Multiplayer.initStage = 999;
+			break;
+		}
 	},
 	
-	initMultiplayer2 : function()
-	{
-		Multiplayer.handsShaked = true;
-		Multiplayer.playerMapY = (Multiplayer.playerNumber - 1) / 4 | 0;
-		Multiplayer.playerMapX = Multiplayer.playerNumber - 1 - Multiplayer.playerMapY * 4;
-		Multiplayer.webSocketLoadState();
-		Multiplayer.initMasks();
-	},
+	
+	/*FLAGS*/
+	playerStepFlag : [false, undefined], 
+	playerEnterWorld : [false, undefined],
 	
 	/*
 	World variables and functions
@@ -27,14 +102,15 @@ var Multiplayer = {
 	playerMapX: 0,
 	playerMapY: 0,
 	
-	playerMap: "undefined",
-	playerMask: "undefined",
+	playerMap: "undefined", //Object
+	playerMask: "undefined", //Object
 	playerNumber: 0,
 	xMap: 0,
 	yMap: 0,
 	vector: [0,0],
-	masks: [],
-	tempMasks: [],
+	masks: [], //Array of Objects
+	tempMasks: [], //Array of Objects
+	
 	
 	enterWorld : function()
 	{
@@ -99,6 +175,11 @@ var Multiplayer = {
 		{
 			Multiplayer.masks[array[0]][array[1]] = array[2];
 		}
+		if (array[0] == Multiplayer.playerMapX && array[1] == Multiplayer.playerMapY)
+		{
+			Multiplayer.initStage++;
+			Multiplayer.initMultiplayer();
+		}
 	},
 	
 	moveMap: function(vector)//vector input
@@ -116,8 +197,35 @@ var Multiplayer = {
 		{
 			//console.log(map);
 			//Apply map
+			//Multiplayer.webSocketSaveCustomMap(Multiplayer.xMap,Multiplayer.yMap,World.state.map);
+			
+			//If player has just entered world
+			if(Multiplayer.playerEnterWorld[0])
+			{
+				Multiplayer.playerEnterWorld[0] = false;
+				$SM.set('game.world.map',JSON.parse(map));
+				Path._embark();
+				return 1;
+			}
+			
+			
+			if (Multiplayer.xMap == 0 && Multiplayer.yMap == 0)
+			{
+				Multiplayer.playerMap = World.state.map;
+				Multiplayer.playerMask = World.state.mask;
+			}
 			restoredMap = JSON.parse(map);
 			World.state.map = restoredMap;
+			
+			
+			//If map-sector hasn't changed
+			if(Multiplayer.playerStepFlag[0])
+			{
+				Multiplayer.playerStepFlag[0] = false;
+				World._move(Multiplayer.playerStepFlag[1]);
+				return 1;
+			}
+			
 			//Save previous mask
 			Multiplayer.tempMasks[Multiplayer.playerMapX+Multiplayer.xMap][Multiplayer.playerMapY+Multiplayer.yMap] = JSON.stringify(World.state.mask);
 			//Change map pieces vars
@@ -137,28 +245,31 @@ var Multiplayer = {
 			World.move([-Multiplayer.vector[0]*60,-Multiplayer.vector[1]*60]);
 			if (Multiplayer.xMap == 0 && Multiplayer.yMap == 0)
 			{
-				Notifications.notify(World, "You're back home");
+				Notifications.notify(World, "you're back home");
 			}
 			else
 			{
-				Notifications.notify(World, "You're on the foreign land");
+				Notifications.notify(World, "you're on the foreign land");
 			}
 			//Emit positive event
 		}
 		else
 		{
 			//Emit negative event
-			Notifications.notify(World, "This place hasn't been discovered yet");
+			Notifications.notify(World, "this place hasn't been discovered yet");
 		}
 		
 	},
 	
 	restoreMap: function()
 	{
-		if (Multiplayer.playerMap !== "undefined") World.state.map = Multiplayer.playerMap;
-		if (Multiplayer.playerMask !== "undefined") World.state.mask = Multiplayer.playerMask;
-		Multiplayer.xMap = 0;
-		Multiplayer.yMap = 0;
+		if (Multiplayer.xMap != 0 || Multiplayer.yMap != 0)
+		{
+			if (Multiplayer.playerMap !== "undefined") World.state.map = Multiplayer.playerMap;
+			if (Multiplayer.playerMask !== "undefined") World.state.mask = Multiplayer.playerMask;
+			Multiplayer.xMap = 0;
+			Multiplayer.yMap = 0;
+		}		
 	},
 	
 	//Outposts
@@ -201,12 +312,15 @@ var Multiplayer = {
 	SAVE_STATE - send player data to server to be saved;
 	LOAD_STATE - request player data from server to be loaded;
 	SAVE_MAP - send current player map to server to be saved;
+	SAVE_CUSTOM_MAP - save custom map
 	LOAD_CUSTOM_MAP - load map (that doesn't belong to current player);
 		Example: %UN%!SEND_CUSTOM_MAP!%x%&%y%&%MAP_DATA%
 			Where: %x% and %y% relative 
 	LOAD_MAP - request current player map from server to be loaded;
 	SAVE_ALL_MASK - save mask for current player;
 	LOAD_ALL_MASK - load masks for current player;
+	LOAD_CUSTOM_STATE - load teh state of custom player
+		%UN%!LOAD_CUSTOM_STATE!%PLAYER_NUMBER%
 	
 	
 	OpCodes(server):
@@ -215,6 +329,7 @@ var Multiplayer = {
 	STATE - player state of current player;
 	MAP - requested map;
 	MASK - requested mask;
+	NOTIFICATION - notification to be shown
 	*/
 	webSocketProtocol: "ws://",
 	webSocketHost: "localhost",
@@ -230,7 +345,7 @@ var Multiplayer = {
 	loaded: false,
 	handsShaked: false,
 	
-	webSocketHandShake : function()
+	webSocketInit : function()
 	{
 		//console.log($SM.get('game.world.map'));
 		Multiplayer.webSocketURI = Multiplayer.webSocketProtocol + Multiplayer.webSocketHost + Multiplayer.webSocketPort + Multiplayer.webSocketTail;
@@ -239,7 +354,8 @@ var Multiplayer = {
 		{
 			//console.log("WS connected");
 			//Multiplayer.webSocketClient.send('Test');
-			Multiplayer.webSocketInitPlayer();
+			Multiplayer.initStage++; //1
+			Multiplayer.initMultiplayer();
 		}
 		Multiplayer.webSocketClient.onmessage = function(event)
 		{	
@@ -251,19 +367,39 @@ var Multiplayer = {
 					break;
 				case "PLAYER":
 					Multiplayer.playerNumber = data[1];
-					Multiplayer.initMultiplayer2();
+					Multiplayer.playerMapY = (Multiplayer.playerNumber - 1) / 4 | 0;
+					Multiplayer.playerMapX = Multiplayer.playerNumber - 1 - Multiplayer.playerMapY * 4;
+					Multiplayer.initStage++; //
+					Multiplayer.initMultiplayer();
 					break;
 				case "STATE":
 					//console.log(data[1]);
-					localStorage.gameState = data[1];
-					Engine.loadGame();
-					Multiplayer.loaded = true;
+					Multiplayer.playerState = JSON.parse(data[1]);
+					Multiplayer.initStage++;
+					Multiplayer.initMultiplayer();
+					//Engine.loadGame();
+					//Multiplayer.loaded = true;
 					break;
 				case "MAP":
-					Multiplayer.moveMap2(data[1]);
+					if (Multiplayer.initStage == 2)
+					{
+						Multiplayer.playerMap = JSON.parse(data[1]);
+						Multiplayer.initStage++;
+						Multiplayer.initMultiplayer();
+					}
+					else
+					{
+						Multiplayer.moveMap2(data[1]);
+					}
 					break;
 				case "MASK":
 					Multiplayer.recieveMask(data[1]);
+					break;
+				case "NOTIFICATION":
+					Notifications.notify(null, data[1]);
+					break;
+				case "CUSTOM_STATE":
+					EnemyOutpost.applyState(data[1]);
 					break;
 			}
 			//console.log("Recieved: " + data[0]);
@@ -282,7 +418,7 @@ var Multiplayer = {
 			{
 				Multiplayer.trial++;
 				console.log("Try again: "+Multiplayer.trial);
-				Multiplayer.webSocketHandShake();
+				Multiplayer.initMultiplayer();
 			}
 		}
 	},
@@ -292,28 +428,45 @@ var Multiplayer = {
 		Multiplayer.send("CONNECT!");
 	},
 	
+	/*WHEN:
+	SinglePlayer saving (X)
+	*/
 	webSocketSendState : function(state,map)
 	{
-		if(Multiplayer.handsShaked && Multiplayer.loaded)
+		if(Multiplayer.initStage >= 999)
 		{
-			if (Multiplayer.xMap == 0 && Multiplayer.yMap == 0)	
-			{
-				Multiplayer.send("SAVE_MAP!"+map);
-				Multiplayer.playerMap = $SM.get('game.world.map');
-				Multiplayer.playerMask = $SM.get('game.world.mask');
-			}
 			Multiplayer.send("SAVE_STATE!"+state);
 		}
 	},
 	
+	/*WHEN:
+	Enter map (X)
+	Change map (X)
+	Do step (X)
+	*/
 	webSocketLoadMap : function(x, y)
 	{
 		Multiplayer.send("LOAD_CUSTOM_MAP!"+x+"&"+y);
 	},
 	
+	/*WHEN:
+	Any changes (X)
+	DO NOT SAVE on exit
+	*/
+	webSocketSaveCustomMap : function(x, y, map)
+	{
+		Multiplayer.send("SAVE_CUSTOM_MAP!"+x+"&"+y+"&"+JSON.stringify(map));
+	},
+	
 	webSocketLoadState : function()
 	{
 		Multiplayer.send("LOAD_STATE!");
+	},
+	
+	webSocketLoadMapP : function()
+	{
+		//Multiplayer.send("LOAD_CUSTOM_MAP!"+Multiplayer.playerMapX+"&"+Multiplayer.playerMapY)
+		Multiplayer.send("LOAD_CUSTOM_MAP!"+0+"&"+0)
 	},
 	
 	webSocketLoadAllMasks : function()
@@ -324,6 +477,11 @@ var Multiplayer = {
 	webSocketSaveMask : function(x,y,mask)
 	{
 		Multiplayer.send("SAVE_MASK!"+x+"&"+y+"&"+mask);
+	},
+	
+	webSocketLoadCustomState : function(n)
+	{
+		Multiplayer.send("LOAD_CUSTOM_STATE!"+n);
 	},
 	
 	send : function(data)

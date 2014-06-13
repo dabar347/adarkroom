@@ -2,14 +2,12 @@ var Multiplayer = {
 	
 	/*
 	TODO:
-	- Interaction between players
-		- Fight
-		- Trade
-		- ???
 	- Interaction player-enemyVillage
-	- Event for enemyOutposts
-	- Sort out situation if two players on one map.
-		- How to refresh changes
+		- enemyVillage event
+		- draw on map (X)
+	- Correct roads
+		- Change village position to virtual one.
+	
 	*/
 	
 	

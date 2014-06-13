@@ -10,6 +10,33 @@ Events.Setpieces = {
 	d:0,
 	m:0,
 	win:0,
+	"enemyVillage": { /* Enemy Village */
+		title: 'An Enemy Village',
+		scenes: {
+			'start': {
+				text: [
+					'a safe place in the wilds.'
+				],
+				notification: 'a safe place in the wilds.',
+				loot: {
+					'cured meat': {
+						min: 5,
+						max: 10,
+						chance: 1
+					}
+				},
+				onLoad: function() {
+					World.useOutpost();
+				},
+				buttons: {
+					'leave': {
+						text: 'leave',
+						nextScene: 'end'
+					}
+				}
+			}
+		}
+	},
 	"outpost": { /* Friendly Outpost */
 		title: 'An Outpost',
 		scenes: {

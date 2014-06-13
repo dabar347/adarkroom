@@ -22,21 +22,25 @@ var World = {
 		SWAMP: 'M',
     	CACHE: 'U',
 		ENEMY_OUTPOST: 'q',
+		ENEMY_VILLAGE: 'w',
 	},
 	TILE_PROBS: {},
 	LANDMARKS: {},
 	STICKINESS: 0.5, // 0 <= x <= 1
 	LIGHT_RADIUS: 2,
 	BASE_WATER: 10,
-	MOVES_PER_FOOD: 3,// DEBUG!!!
-	MOVES_PER_WATER: 1,
+	//MOVES_PER_FOOD: 2,// DEBUG!!!
+	MOVES_PER_FOOD: 100000,
+	//MOVES_PER_WATER: 1,
+	MOVES_PER_WATER: 100000,
 	DEATH_COOLDOWN: 120,
 	FIGHT_CHANCE: 0.20,
 	BASE_HEALTH: 10,
 	BASE_HIT_CHANCE: 0.8,
 	MEAT_HEAL: 8,
 	MEDS_HEAL: 20,
-	FIGHT_DELAY: 3, // DEBUG!!!
+	//FIGHT_DELAY: 3, // DEBUG!!!
+	FIGHT_DELAY: 1000000,
 	NORTH: [ 0, -1],
 	SOUTH: [ 0,  1],
 	WEST:  [-1,  0],
@@ -119,6 +123,7 @@ var World = {
 		// Setpiece definitions
 		World.LANDMARKS[World.TILE.OUTPOST] = { num: 0, minRadius: 0, maxRadius: 0, scene: 'outpost', label: 'An&nbsp;Outpost' };
 		World.LANDMARKS[World.TILE.ENEMY_OUTPOST] = { num: 0, minRadius: 0, maxRadius: 0, scene: 'enemyOutpost', label: 'An&nbsp;Enemy&nbsp;Outpost' };
+		World.LANDMARKS[World.TILE.ENEMY_VILLAGE] = { num: 0, minRadius: 0, maxRadius: 0, scene: 'enemyVillage', label: 'An&nbsp;Enemy&nbsp;Village' };
 		World.LANDMARKS[World.TILE.IRON_MINE] = { num: 1, minRadius: 5, maxRadius: 5, scene: 'ironmine', label: 'Iron&nbsp;Mine' };
 		World.LANDMARKS[World.TILE.COAL_MINE] = { num: 1, minRadius: 10, maxRadius: 10, scene: 'coalmine', label: 'Coal&nbsp;Mine' };
 		World.LANDMARKS[World.TILE.SULPHUR_MINE] = { num: 1, minRadius: 20, maxRadius: 20, scene: 'sulphurmine', label: 'Sulphur&nbsp;Mine' };
@@ -542,7 +547,14 @@ var World = {
 		var curTile = World.state.map[World.curPos[0]][World.curPos[1]];
 
 		if(curTile == World.TILE.VILLAGE) {
-			World.goHome();
+			if(Multiplayer.xMap == 0 && Multiplayer.yMap == 0)
+			{
+				World.goHome();
+			}
+			else
+			{
+				Events.startEvent(Events.Setpieces[World.LANDMARKS['w'].scene]);
+			}
 		} else if(typeof World.LANDMARKS[curTile] != 'undefined') {
 			if(curTile != World.TILE.OUTPOST || !World.outpostUsed()) {
 				Events.startEvent(Events.Setpieces[World.LANDMARKS[curTile].scene]);
@@ -827,7 +839,14 @@ var World = {
 					{
 						switch(c) {
 							case World.TILE.VILLAGE:
-								mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">The&nbsp;Village</div></span>';
+								if(Multiplayer.xMap == 0 && Multiplayer.yMap == 0)
+								{
+									mapString += '<span class="landmark">' + c + '<div class="tooltip' + ttClass + '">The&nbsp;Village</div></span>';
+								}
+								else
+								{
+									mapString += '<span class="enemyOutpost">' + c + '<div class="tooltip' + ttClass + '">' + World.LANDMARKS[World.TILE.ENEMY_VILLAGE].label + '</div></span>';
+								}
 								break;
 							default:
 								if(typeof World.LANDMARKS[c] != 'undefined' && (c != World.TILE.OUTPOST || !World.outpostUsed(i, j))) {
